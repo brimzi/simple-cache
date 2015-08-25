@@ -6,7 +6,7 @@
 
 void Server::startAccept()
 {
-	newConnection_.reset(new connection(io_service_, connectionManager_));
+	newConnection_.reset(new Connection(io_service_, connectionManager_));
 	acceptor_.async_accept(newConnection_->socket(),boost::bind(&Server::handleAccept, this,
 			boost::asio::placeholders::error));
 }

@@ -16,6 +16,6 @@ void ConnectionManager::stop(ConnectionPtr c)
 void ConnectionManager::stop_all()
 {
 	std::for_each(connections_.begin(), connections_.end(),
-		boost::bind(&connection::stop, _1));
+		boost::bind(&Connection::stop, _1));
 	connections_.clear();
 }

@@ -1,19 +1,27 @@
 #pragma once
 #include <boost/unordered_map.hpp>
 #include <boost/container/vector.hpp>
+
+using namespace boost::container;
 class StorageProvider
 {
 public:
-	void save(std::string* key, boost::shared_ptr<vector<boost::uint8_t>>  data);
+	StorageProvider(boost::uint32_t maxSize);
 
-	std::string get(const std::string& key);
+	void save(const boost::container::vector<boost::uint8_t>& key
+		, boost::shared_ptr<boost::container::vector<boost::uint8_t>>  data);
+
+	boost::shared_ptr<boost::container::vector<boost::uint8_t>> get(const boost::container::vector<boost::uint8_t>& key);
+
+	void remove(const boost::container::vector<boost::uint8_t>& key);
 
 private:
-	bool canAccomodate(boost::uint32_t size);
+	bool enoughSpace(boost::uint32_t size);
 
-	void evictOldest();
-
-	boost::unordered_map<boost::uint16_t,boost::container::vector<boost::uint8_t>*> data_;
+	void createSpace(boost::uint32_t size);
+	
+	boost::unordered_map<std::string, boost::shared_ptr<boost::container::vector<boost::uint8_t>>> cache_;
 	boost::uint32_t currentSize_;
+	boost::uint32_t maxSize_;
 };
 

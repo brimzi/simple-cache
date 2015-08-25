@@ -3,14 +3,25 @@
 #include <boost/array.hpp>
 #include <boost/container/vector.hpp>
 #include <boost/enable_shared_from_this.hpp>
-
+#include "StorageProvider.h"
 
 using namespace boost::asio::ip;
 class ConnectionManager;
 
-class connection:public boost::enable_shared_from_this<connection> {
+enum OpCodes
+{
+	Set,Get,Delete,Status,Data
+};
+
+enum ErrorCodes 
+{
+	Ok,NoSuchKey,KeyTooBig,DataTooBig,OtherErrors
+};
+
+
+class Connection:public boost::enable_shared_from_this<Connection> {
 public:
-	explicit connection(boost::asio::io_service& io_service, ConnectionManager& manager );
+	explicit Connection(boost::asio::io_service& io_service, ConnectionManager& manager,  StorageProvider& storage);
 
 	tcp::socket& socket();
 
@@ -28,24 +39,36 @@ private:
 
 	void handleReadRawData(const boost::system::error_code& error, boost::uint32_t bytes_transferred, boost::uint32_t expected);
 
+	void handleWriteReqResponse(const boost::system::error_code& error);
+
 	void startClientRequestedOp();
 
 	void startReadKey(boost::uint16_t keySize);
 
 	void startSetDataOperation();
 
+	void startGetOperation();
+
+	void startDeleteOperation();
+
+	void sendResponseAndStart(boost::shared_ptr<boost::container::vector<boost::uint8_t>> resp);
+
+
+
+	
+
+	void sendStatusAndRestart(ErrorCodes code, std::string message);
+
 	void retriveAndSendData(boost::uint16_t key);
 
 	void deleteData(boost::uint16_t key);
 	tcp::socket socket_;
-	//boost::array<boost::uint8_t,512>  data_;//TODO turn it into a dynamic structure
-	//boost::uint16_t key_;
 
 	boost::uint8_t opcode_;
 	boost::container::vector<boost::uint8_t> key_;
-	boost::container::vector<boost::uint8_t> data_;
+
 	ConnectionManager& connectionManager_;
-	
+	StorageProvider& storageProvider_;
 	boost::shared_ptr<boost::container::vector<boost::uint8_t>> data_;
 
 	
@@ -53,4 +76,4 @@ private:
 	
 };
 
-typedef boost::shared_ptr<connection> ConnectionPtr;
+typedef boost::shared_ptr<Connection> ConnectionPtr;
