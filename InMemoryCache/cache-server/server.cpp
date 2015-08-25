@@ -4,9 +4,16 @@
 #include "ConnectionManager.h"
 #include "connection.h"
 
+
+
+Server::Server(boost::asio::io_service& io_service, short port, int maxCacheSize)
+	: io_service_(io_service),	acceptor_(io_service, tcp::endpoint(tcp::v4(), port)), storageProvider_(maxCacheSize)
+{
+	startAccept();
+}
 void Server::startAccept()
 {
-	newConnection_.reset(new Connection(io_service_, connectionManager_));
+	newConnection_.reset(new Connection(io_service_, connectionManager_, storageProvider_));
 	acceptor_.async_accept(newConnection_->socket(),boost::bind(&Server::handleAccept, this,
 			boost::asio::placeholders::error));
 }

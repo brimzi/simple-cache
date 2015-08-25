@@ -7,12 +7,8 @@ using namespace boost::asio::ip;
 class Server {
 
 public:
-	Server(boost::asio::io_service& io_service, short port)
-		: io_service_(io_service),
-		acceptor_(io_service, tcp::endpoint(tcp::v4(), port))
-	{
-		startAccept();
-	}
+	Server(boost::asio::io_service& io_service, short port, int maxCacheSize);
+	
 
 
 private:
@@ -23,5 +19,6 @@ private:
 	tcp::acceptor acceptor_;
 	ConnectionPtr newConnection_;
 	ConnectionManager connectionManager_;
+	StorageProvider storageProvider_;
 
 };

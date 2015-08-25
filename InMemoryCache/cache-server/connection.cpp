@@ -18,8 +18,8 @@ tcp::socket & Connection::socket()
 
 void Connection::start()
 {
-	data_.reset(new boost::container::vector<boost::uint16_t>);
-	boost::asio::async_read(socket_, data_, boost::asio::transfer_at_least(3),
+	data_.reset(new boost::container::vector<boost::uint8_t>);
+	boost::asio::async_read(socket_, (*data_.get()), boost::asio::transfer_at_least(3),
 		 boost::bind(&Connection::handle_readOpcode, shared_from_this(),
 			boost::asio::placeholders::error,
 			boost::asio::placeholders::bytes_transferred));
@@ -39,7 +39,7 @@ void Connection::startSetDataOperation()
 {
 	cout << "startSet " << endl;
 	(*data_.get()).clear();
-	boost::asio::async_read(socket_, data_,
+	boost::asio::async_read(socket_, (*data_.get()), boost::asio::transfer_at_least(4),
 		boost::bind(&Connection::handle_ReadRawDataHeader, shared_from_this(),
 			boost::asio::placeholders::error, boost::asio::placeholders::bytes_transferred));
 
@@ -111,7 +111,7 @@ void Connection::handle_ReadRawDataHeader(const boost::system::error_code & erro
 		boost::uint32_t size = ((*data_.get())[0] << 24) | ((*data_.get())[1] << 16) | ((*data_.get())[2] << 8)
 			| ((*data_.get())[3]);
 		(*data_.get()).clear();
-		boost::asio::async_read(socket_, data_, boost::asio::transfer_at_least(size),
+		boost::asio::async_read(socket_, (*data_.get()), boost::asio::transfer_at_least(size),
 			boost::bind(&Connection::handleReadRawData, shared_from_this(),
 				boost::asio::placeholders::error, boost::asio::placeholders::bytes_transferred,size));
 	}
@@ -131,7 +131,7 @@ void Connection::handleReadRawData(const boost::system::error_code& error, boost
 		}
 		else
 		{
-			storageProvider_.save(key_,data_);
+			storageProvider_.save(key_,data_);//TODO may wanna consider having a status,incase of error
 			sendStatusAndRestart(Ok, "OK");
 		}
 
@@ -201,8 +201,8 @@ void Connection::sendStatusAndRestart(ErrorCodes code,std::string message) {
 
 void Connection::sendResponseAndStart(boost::shared_ptr<boost::container::vector<boost::uint8_t>> resp)
 {
-	boost::asio::async_write(socket_, (*resp.get()), boost::bind(&Connection::handleWriteReqResponse, shared_from_this(),
-		boost::asio::placeholders::error));
+	boost::asio::async_write(socket_,(*resp.get()), boost::bind(&Connection::handleWriteReqResponse,
+		shared_from_this(),boost::asio::placeholders::error));
 }
 
 void Connection::retriveAndSendData(boost::uint16_t key)

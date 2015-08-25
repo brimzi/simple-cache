@@ -25,7 +25,7 @@ void StorageProvider::save(const boost::container::vector<boost::uint8_t>& key, 
 	
 }
 
-boost::shared_ptr<vector<boost::uint8_t>> StorageProvider::get(const std::string & key)
+boost::shared_ptr<vector<boost::uint8_t>> StorageProvider::get(const boost::container::vector<boost::uint8_t>& key)
 {
 	return boost::shared_ptr<vector<boost::uint8_t>>();
 }
