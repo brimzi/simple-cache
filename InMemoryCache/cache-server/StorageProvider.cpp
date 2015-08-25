@@ -32,6 +32,8 @@ boost::shared_ptr<vector<boost::uint8_t>> StorageProvider::get(const boost::cont
 
 void StorageProvider::remove(const boost::container::vector<boost::uint8_t>& key)
 {
+	std::string dataToRemove(key.begin(), key.end());
+	removeData(dataToRemove);
 }
 
 bool StorageProvider::enoughSpace(boost::uint32_t size)
@@ -45,10 +47,16 @@ void StorageProvider::createSpace(boost::uint32_t size)
 	{
 		std::string dataToRemove;//TODO get from heap?
 
-
-		cache_.erase(dataToRemove);
-		currentSize_ -= size;
+		removeData(dataToRemove);
+		
 	}
+}
+
+void StorageProvider::removeData(std::string& key)
+{
+	//TODO update currentSize
+	cache_.erase(key);
+
 }
 
 

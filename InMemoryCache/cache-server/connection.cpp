@@ -168,14 +168,14 @@ void Connection::startClientRequestedOp()
 		startDeleteOperation();
 		break;
 	case 3:
-
+		sendStatusAndRestart(OtherErrors, "Opcode you sent is not valid in this case");
 		break;
 	case 4:
-
+		sendStatusAndRestart(OtherErrors, "Opcode you sent is not valid in this case");
 		break;
 	default: 
 	{
-
+		sendStatusAndRestart(OtherErrors, "Opcode you sent does not exist");
 	}
 	}
 }
