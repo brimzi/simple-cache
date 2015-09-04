@@ -18,8 +18,8 @@ tcp::socket & Connection::socket()
 
 void Connection::start()
 {
-	data_.reset(new boost::container::vector<boost::uint8_t>);
-	boost::asio::async_read(socket_, (*data_.get()), boost::asio::transfer_at_least(3),
+	data_.reset(new boost::container::vector<boost::uint8_t>(3));
+	boost::asio::async_read(socket_, boost::asio::buffer((data_.get()),3), boost::asio::transfer_at_least(3),
 		 boost::bind(&Connection::handle_readOpcode, shared_from_this(),
 			boost::asio::placeholders::error,
 			boost::asio::placeholders::bytes_transferred));
@@ -30,7 +30,7 @@ void Connection::startReadKey(boost::uint16_t keySize)
 {
 	cout << "startReadKey " << endl;
 	key_.clear();//start fresh.TODO consider cost of this
-	boost::asio::async_read(socket_, key_, boost::asio::transfer_at_least(keySize),
+	boost::asio::async_read(socket_, boost::asio::buffer(&key_,keySize), boost::asio::transfer_at_least(keySize),
 		boost::bind(&Connection::handle_readKey, shared_from_this(),
 			boost::asio::placeholders::error, boost::asio::placeholders::bytes_transferred, keySize));
 }
@@ -39,7 +39,7 @@ void Connection::startSetDataOperation()
 {
 	cout << "startSet " << endl;
 	(*data_.get()).clear();
-	boost::asio::async_read(socket_, (*data_.get()), boost::asio::transfer_at_least(4),
+	boost::asio::async_read(socket_, boost::asio::buffer(data_.get(),4), boost::asio::transfer_at_least(4),
 		boost::bind(&Connection::handle_ReadRawDataHeader, shared_from_this(),
 			boost::asio::placeholders::error, boost::asio::placeholders::bytes_transferred));
 
@@ -72,7 +72,13 @@ void Connection::handle_readOpcode(const boost::system::error_code& error, unsig
 {
 	if (!error) 
 	{
-		opcode_ = (*data_.get())[0];
+		
+		//opcode_ = data_->operator[](0); 
+
+		boost::uint8_t code= data_->at(0);
+		cout << "opcode " << data_->size() << endl;
+
+
 		boost::uint16_t keySize= ((*data_.get())[1] << 8)| (*data_.get())[2];//TODO handle endianess
 		std::cout << "Opcode Received: " << opcode_ << std::endl;
 		startReadKey(keySize);
@@ -111,7 +117,7 @@ void Connection::handle_ReadRawDataHeader(const boost::system::error_code & erro
 		boost::uint32_t size = ((*data_.get())[0] << 24) | ((*data_.get())[1] << 16) | ((*data_.get())[2] << 8)
 			| ((*data_.get())[3]);
 		(*data_.get()).clear();
-		boost::asio::async_read(socket_, (*data_.get()), boost::asio::transfer_at_least(size),
+		boost::asio::async_read(socket_, boost::asio::buffer(data_.get(),size), boost::asio::transfer_at_least(size),
 			boost::bind(&Connection::handleReadRawData, shared_from_this(),
 				boost::asio::placeholders::error, boost::asio::placeholders::bytes_transferred,size));
 	}
@@ -201,8 +207,8 @@ void Connection::sendStatusAndRestart(ErrorCodes code,std::string message) {
 
 void Connection::sendResponseAndStart(boost::shared_ptr<boost::container::vector<boost::uint8_t>> resp)
 {
-	boost::asio::async_write(socket_,(*resp.get()), boost::bind(&Connection::handleWriteReqResponse,
-		shared_from_this(),boost::asio::placeholders::error));
+	//boost::asio::async_write(socket_,(*resp.get()), boost::bind(&Connection::handleWriteReqResponse,
+	//	shared_from_this(),boost::asio::placeholders::error));
 }
 
 void Connection::retriveAndSendData(boost::uint16_t key)

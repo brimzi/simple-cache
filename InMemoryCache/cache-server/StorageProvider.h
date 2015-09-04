@@ -20,6 +20,7 @@ private:
 
 	void createSpace(boost::uint32_t size);
 	
+	void removeData(std::string& key);
 	boost::unordered_map<std::string, boost::shared_ptr<boost::container::vector<boost::uint8_t>>> cache_;
 	boost::uint32_t currentSize_;
 	boost::uint32_t maxSize_;

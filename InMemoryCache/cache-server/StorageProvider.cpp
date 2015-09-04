@@ -27,7 +27,11 @@ void StorageProvider::save(const boost::container::vector<boost::uint8_t>& key, 
 
 boost::shared_ptr<vector<boost::uint8_t>> StorageProvider::get(const boost::container::vector<boost::uint8_t>& key)
 {
-	return boost::shared_ptr<vector<boost::uint8_t>>();
+	std::string keyString(key.begin(), key.end());//TODO think about the cost here
+	if (cache_.find(keyString) == cache_.end())
+		return 0;
+
+	return cache_[keyString];
 }
 
 void StorageProvider::remove(const boost::container::vector<boost::uint8_t>& key)
@@ -48,7 +52,6 @@ void StorageProvider::createSpace(boost::uint32_t size)
 		std::string dataToRemove;//TODO get from heap?
 
 		removeData(dataToRemove);
-		
 	}
 }
 
@@ -56,7 +59,6 @@ void StorageProvider::removeData(std::string& key)
 {
 	//TODO update currentSize
 	cache_.erase(key);
-
 }
 
 
