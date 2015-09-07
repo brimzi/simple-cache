@@ -7,37 +7,44 @@ using namespace boost::container;
 
 StorageProvider::StorageProvider(boost::uint32_t maxSize):maxSize_(maxSize),currentSize_(0),cache_()
 {
+	evictor_.reset(new OldestInsertionEviction);
 }
 
-void StorageProvider::save(const boost::container::vector<boost::uint8_t>& key, boost::shared_ptr<vector<boost::uint8_t>> data)
+void StorageProvider::save(const std::vector<boost::uint8_t>& key, boost::shared_ptr<std::vector<boost::uint8_t>> data)
 {
 	std::string keyString(key.begin(), key.end());//TODO think about the cost here
-
-	boost::uint32_t size = (*data.get()).size();
-
-	if (!enoughSpace(size)) {
-		createSpace(size);
+	if (!enoughSpace(data->size())) {
+		createSpace(data->size());
 	}
 
-	//we add to cache
+	//check if its already in cache
+	if (cache_.find(keyString)==cache_.end())
+	{
+		evictor_->addKey(keyString);
+		currentSize_ += data->size();
+	}
+	else
+	{
+		evictor_->refreshKey(keyString);
+		currentSize_=(currentSize_- cache_[keyString]->size())+ data->size();
+	}
 	cache_[keyString] = data;
-	currentSize_ += size;
-	
 }
 
-boost::shared_ptr<vector<boost::uint8_t>> StorageProvider::get(const boost::container::vector<boost::uint8_t>& key)
+boost::shared_ptr<std::vector<boost::uint8_t>> StorageProvider::get(const std::vector<boost::uint8_t>& key)
 {
 	std::string keyString(key.begin(), key.end());//TODO think about the cost here
+
 	if (cache_.find(keyString) == cache_.end())
 		return 0;
 
 	return cache_[keyString];
 }
 
-void StorageProvider::remove(const boost::container::vector<boost::uint8_t>& key)
+int StorageProvider::remove(const std::vector<boost::uint8_t>& key)
 {
 	std::string dataToRemove(key.begin(), key.end());
-	removeData(dataToRemove);
+	return removeData(dataToRemove);
 }
 
 bool StorageProvider::enoughSpace(boost::uint32_t size)
@@ -49,16 +56,25 @@ void StorageProvider::createSpace(boost::uint32_t size)
 {
 	while ((currentSize_ + size) > maxSize_) 
 	{
-		std::string dataToRemove;//TODO get from heap?
-
+		std::string dataToRemove = evictor_->nextEviction();
 		removeData(dataToRemove);
 	}
 }
 
-void StorageProvider::removeData(std::string& key)
+int StorageProvider::removeData(std::string& key)
 {
-	//TODO update currentSize
-	cache_.erase(key);
+	if (cache_.find(key) == cache_.end())
+	{
+		currentSize_ -= cache_[key]->size();
+		cache_.erase(key);
+		evictor_->deleteKey(key);
+		return 0;
+	}
+	else
+	{
+		return 1;
+	}
+	
 }
 
 

@@ -1,8 +1,9 @@
 #pragma once
 #include <boost/asio.hpp>
-#include <boost/array.hpp>
+#include <stdint.h>
 #include <boost/container/vector.hpp>
 #include <boost/enable_shared_from_this.hpp>
+#include <vector>
 #include "StorageProvider.h"
 
 using namespace boost::asio::ip;
@@ -21,7 +22,7 @@ enum ErrorCodes
 
 class Connection:public boost::enable_shared_from_this<Connection> {
 public:
-	explicit Connection(boost::asio::io_service& io_service, ConnectionManager& manager,  StorageProvider& storage);
+	explicit Connection(boost::asio::io_service& io_service, ConnectionManager& manager,  StorageProvider& storage,int maxData,int maxKeySize_);
 
 	tcp::socket& socket();
 
@@ -51,7 +52,11 @@ private:
 
 	void startDeleteOperation();
 
-	void sendResponseAndStart(boost::shared_ptr<boost::container::vector<boost::uint8_t>> resp);
+	void sendResponseAndStart(boost::shared_ptr<std::vector<boost::uint8_t>>  resp);
+
+	uint32_t toInt32(const std::vector<uint8_t>& intBytes);
+
+	uint16_t toInt16(const std::vector<uint8_t>& intBytes);
 
 
 
@@ -62,14 +67,18 @@ private:
 	void retriveAndSendData(boost::uint16_t key);
 
 	void deleteData(boost::uint16_t key);
+
+
 	tcp::socket socket_;
 
-	boost::uint8_t opcode_;
-	boost::container::vector<boost::uint8_t> key_;
-
+	uint8_t opcode_;
+	std::vector<uint8_t> key_;
+	int maxDataSize_;
+	int maxKeySize_;
 	ConnectionManager& connectionManager_;
 	StorageProvider& storageProvider_;
-	boost::shared_ptr<boost::container::vector<boost::uint8_t>> data_;
+	boost::shared_ptr<std::vector<uint8_t>> data_;
+
 
 	
 	
