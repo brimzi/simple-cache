@@ -46,6 +46,7 @@ public:
 class OldestInsertionEviction :public EvictionStrategy
 {
 public:
+	 OldestInsertionEviction();
 	 std::string nextEviction() ;
 
 	 void addKey(std::string) ;

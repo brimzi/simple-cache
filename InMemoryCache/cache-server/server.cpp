@@ -1,4 +1,4 @@
-#include "server.h"
+#include "Server.h"
 #include <boost/bind.hpp>
 #include <iostream>
 #include "ConnectionManager.h"
@@ -6,7 +6,7 @@
 
 
 
-Server::Server(boost::asio::io_service& io_service, uint8_t port, int maxCacheSize)
+Server::Server(boost::asio::io_service& io_service, uint32_t port, int maxCacheSize)
 	: io_service_(io_service),	acceptor_(io_service, tcp::endpoint(tcp::v4(), port)), storageProvider_(maxCacheSize)
 	,maxDataSize_(1048576),maxKeySize_(256)
 {

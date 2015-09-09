@@ -1,13 +1,13 @@
 #pragma once
 #include <boost/asio.hpp>
-#include "connection.h"
+#include "Connection.h"
 #include "ConnectionManager.h"
 
 using namespace boost::asio::ip;
 class Server {
 
 public:
-	Server(boost::asio::io_service& io_service, uint8_t port, int maxCacheSize);
+	Server(boost::asio::io_service& io_service, uint32_t port, int maxCacheSize);
 	
 
 private:

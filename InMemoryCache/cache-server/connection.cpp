@@ -1,22 +1,12 @@
-#include "connection.h"
+#include "Connection.h"
 #include <iostream>
+#include <boost/array.hpp>
 #include <boost/bind.hpp>
+#include <boost/asio/buffer.hpp>
 #include "ConnectionManager.h"
 #include "StorageProvider.h"
 
 using namespace std;
-/*bool isBigEndian()
-{
-	union {
-		uint32_t i;
-		char c[4];
-	} dummy = { 0x01020304 };
-
-	return dummy.c[0] == 1;
-}
-*/
-
-
 
 Connection::Connection(boost::asio::io_service & io_service, ConnectionManager& manager,StorageProvider& storage, int maxData,int maxKey):socket_(io_service),
 										connectionManager_(manager),storageProvider_(storage),maxDataSize_(maxData), maxKeySize_(maxKey), opcode_(0)
@@ -39,7 +29,7 @@ void Connection::start()
 
 }
 
-void Connection::startReadKey(boost::uint16_t keySize)
+void Connection::startReadKey(boost::uint16_t& keySize)
 {
 	cout << "startReadKey " << endl;
 	key_.resize(keySize);// .clear();//start fresh.TODO consider cost of this
@@ -60,27 +50,31 @@ void Connection::startSetDataOperation()
 
 void Connection::startGetOperation()
 {
-	boost::shared_ptr<std::vector<uint8_t>> res = storageProvider_.get(key_);
-	if (res)
+	data_ = storageProvider_.get(key_);
+	if (data_)
 	{
-		data_.reset(res.get());
-		uint8_t length[] = { res->size() ,res->size() >> 8,res->size() >> 16,res->size() >> 24 };//TODO verify this
+		
+		uint8_t header[] = { Data, data_->size() ,data_->size() >> 8,data_->size() >> 16,data_->size() >> 24 };//TODO verify this
 
-		res->insert(res->begin(), Data);//TODO consider the performance hit here,maybe I use a deque??
+		std::vector<boost::asio::mutable_buffer> bufs = {boost::asio::buffer(header),boost::asio::buffer(*data_.get())};
 
-		res->insert(res->begin() + 1, length, length + 4);
+		//res->insert(res->begin(), Data);//TODO consider the performance hit here,maybe I use a deque??
 
-		sendResponseAndStart(data_);
+		//res->insert(res->begin() + 1, length, length + 4);
+
+		sendResponseAndStart(bufs, data_->size()+4);
 	}
 	else
 	{
+		boost::shared_ptr<std::vector<uint8_t>> r;
+		data_ = r;
 		sendStatusAndRestart(NoSuchKey, "Requested data not in cache");
 	}
 }
 
 void Connection::startDeleteOperation()
 {
-	if (!storageProvider_.remove(key_))
+	if (storageProvider_.remove(key_))
 	{
 		sendStatusAndRestart(Ok, "OK");
 	}
@@ -100,12 +94,12 @@ void Connection::stop()
 	std::cout << "Connection Closed: " <<address <<std::endl;
 }
 
-void Connection::handle_readOpcode(const boost::system::error_code& error, unsigned int bytes_transferred)
+void Connection::handle_readOpcode(const boost::system::error_code& error, uint32_t bytes_transferred)
 {
 	if (!error) 
 	{
 		opcode_ = data_->at(0);
-		boost::uint16_t keySize = toInt16(*data_.get());
+		boost::uint16_t keySize = toInt16(*data_.get(),1);
 		if (keySize <= maxKeySize_)
 		{
 			startReadKey(keySize);
@@ -127,7 +121,7 @@ void Connection::handle_readKey(const boost::system::error_code& error, boost::u
 	{
 		if (byteTransferred != expectedkeySize)
 		{
-			sendStatusAndRestart(OtherErrors, "Data sent is not equal to data expected");
+			sendStatusAndRestart(OtherErrors, "Data sent is not equal to the expected size");
 		}
 		else 
 		{
@@ -140,12 +134,12 @@ void Connection::handle_readKey(const boost::system::error_code& error, boost::u
 	}
 }
 
-void Connection::handle_ReadRawDataHeader(const boost::system::error_code & error, unsigned int bytes_transferred)
+void Connection::handle_ReadRawDataHeader(const boost::system::error_code & error, uint32_t bytes_transferred)
 {
 	if (!error)
 	{
-		uint32_t size = toInt32(*data_.get());
-		if(size>maxDataSize_)
+		uint32_t size = toInt32(*data_.get(),0);
+		if(size <= maxDataSize_)
 		{
 			data_.reset(new std::vector<boost::uint8_t>(size));
 			boost::asio::async_read(socket_, boost::asio::buffer(*data_.get()), boost::asio::transfer_at_least(size),
@@ -232,24 +226,25 @@ void Connection::sendStatusAndRestart(ErrorCodes code,std::string message) {
 	{
 		data_.get()->push_back(letter);
 	}
-	sendResponseAndStart(data_);
+	std::vector<boost::asio::mutable_buffer> bufs = { boost::asio::buffer(*data_.get()) };
+	sendResponseAndStart(bufs, data_->size());
 }
 
-void Connection::sendResponseAndStart(boost::shared_ptr<std::vector<boost::uint8_t>> resp)
+void Connection::sendResponseAndStart(std::vector<boost::asio::mutable_buffer>& resp,uint32_t size)
 {
-	boost::asio::async_write(socket_, boost::asio::buffer(*resp.get()), boost::asio::transfer_at_least(resp->size()), boost::bind(&Connection::handleWriteReqResponse,
+	boost::asio::async_write(socket_, resp, boost::asio::transfer_at_least(size), boost::bind(&Connection::handleWriteReqResponse,
 		shared_from_this(),boost::asio::placeholders::error));
 }
 
 
-uint32_t Connection::toInt32(const std::vector<uint8_t>& intBytes)
+uint32_t Connection::toInt32(const std::vector<uint8_t>& intBytes, uint32_t start)
 {
-	return (intBytes[3] << 24) | (intBytes[2] << 16) | (intBytes[1] << 8) | intBytes[0];
+	return (intBytes[start+3] << 24) | (intBytes[start+2] << 16) | (intBytes[start+1] << 8) | intBytes[start];
 }
 
-uint16_t Connection::toInt16(const std::vector<uint8_t>& intBytes)
+uint16_t Connection::toInt16(const std::vector<uint8_t>& intBytes,uint32_t start)
 {
-	return  (intBytes[1] << 8) | intBytes[0];
+	return  (intBytes[start+1] << 8) | intBytes[start];
 }
 
 

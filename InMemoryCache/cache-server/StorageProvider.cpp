@@ -7,7 +7,7 @@ using namespace boost::container;
 
 StorageProvider::StorageProvider(boost::uint32_t maxSize):maxSize_(maxSize),currentSize_(0),cache_()
 {
-	evictor_.reset(new OldestInsertionEviction);
+	evictor_.reset(new OldestInsertionEviction());
 }
 
 void StorageProvider::save(const std::vector<boost::uint8_t>& key, boost::shared_ptr<std::vector<boost::uint8_t>> data)
@@ -16,8 +16,8 @@ void StorageProvider::save(const std::vector<boost::uint8_t>& key, boost::shared
 	if (!enoughSpace(data->size())) {
 		createSpace(data->size());
 	}
-
-	//check if its already in cache
+	//cache_[keyString] = data;
+	//we check if its already in cache
 	if (cache_.find(keyString)==cache_.end())
 	{
 		evictor_->addKey(keyString);
@@ -61,18 +61,18 @@ void StorageProvider::createSpace(boost::uint32_t size)
 	}
 }
 
-int StorageProvider::removeData(std::string& key)
+bool StorageProvider::removeData(std::string& key)
 {
-	if (cache_.find(key) == cache_.end())
+	if (cache_.find(key) != cache_.end())
 	{
 		currentSize_ -= cache_[key]->size();
 		cache_.erase(key);
 		evictor_->deleteKey(key);
-		return 0;
+		return 1;
 	}
 	else
 	{
-		return 1;
+		return 0;
 	}
 	
 }

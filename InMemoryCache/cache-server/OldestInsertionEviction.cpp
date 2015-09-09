@@ -5,15 +5,15 @@
 using namespace boost;
 using namespace boost::multi_index;
 
+OldestInsertionEviction::OldestInsertionEviction():currentRank(0){}
 
 std::string OldestInsertionEviction::nextEviction()
 {
 	DataItemContainer::nth_index<1>::type& rankIndex = dataItems_.get<1>();
 
 	auto first = rankIndex.begin();
-	std::string retVal = first->key;
+	std::string retVal = first->key;//TODO consider cost of string copy
 	dataItems_.erase(retVal);
-
 	return retVal;
 }
 

@@ -1,6 +1,5 @@
 #pragma once
-#include <boost/unordered_map.hpp>
-#include <boost/container/vector.hpp>
+#include <unordered_map>
 #include <vector>
 #include <boost/shared_ptr.hpp>
 #include "EvictionStrategy.h"
@@ -25,9 +24,9 @@ private:
 
 	void createSpace(boost::uint32_t size);
 	
-	int removeData(std::string& key);
+	bool removeData(std::string& key);
 
-	boost::unordered_map<std::string, boost::shared_ptr<std::vector<uint8_t>>> cache_;
+	std::unordered_map<std::string, boost::shared_ptr<std::vector<uint8_t>>> cache_;
 	uint32_t currentSize_;
 	uint32_t maxSize_;
 	boost::shared_ptr<EvictionStrategy> evictor_;

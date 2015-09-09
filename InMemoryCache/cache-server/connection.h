@@ -44,7 +44,7 @@ private:
 
 	void startClientRequestedOp();
 
-	void startReadKey(boost::uint16_t keySize);
+	void startReadKey(boost::uint16_t& keySize);
 
 	void startSetDataOperation();
 
@@ -52,11 +52,11 @@ private:
 
 	void startDeleteOperation();
 
-	void sendResponseAndStart(boost::shared_ptr<std::vector<boost::uint8_t>>  resp);
+	void sendResponseAndStart(std::vector<boost::asio::mutable_buffer>& resp, uint32_t size);
 
-	uint32_t toInt32(const std::vector<uint8_t>& intBytes);
+	uint32_t toInt32(const std::vector<uint8_t>& intBytes, uint32_t start);
 
-	uint16_t toInt16(const std::vector<uint8_t>& intBytes);
+	uint16_t toInt16(const std::vector<uint8_t>& intBytes, uint32_t start);
 
 
 

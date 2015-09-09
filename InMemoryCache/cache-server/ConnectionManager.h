@@ -1,7 +1,7 @@
 #pragma once
 
 #include <set>
-#include "connection.h"
+#include "Connection.h"
 
 class ConnectionManager : private boost::noncopyable
 {
