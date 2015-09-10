@@ -2,7 +2,7 @@
 #include <boost/bind.hpp>
 #include <iostream>
 #include "ConnectionManager.h"
-#include "connection.h"
+#include "Connection.h"
 
 
 

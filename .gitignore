@@ -3,3 +3,5 @@
 *.sdf
 *.opensdf
 *Debug*
+*output*
+*build*
