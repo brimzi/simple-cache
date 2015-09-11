@@ -1,4 +1,4 @@
-set (PROJECT_NAME "SimpleCacheServer" CXX)
+set (PROJECT_NAME "CacheTestClient" CXX)
 
 project(${PROJECT_NAME})
 
@@ -21,6 +21,6 @@ if (Boost_FOUND)
 endif ()
 
 
-add_executable (${PROJECT_NAME} Main.cpp Server.cpp Server.h StorageProvider.cpp StorageProvider.h Connection.cpp Connection.h ConnectionManager.cpp ConnectionManager.h OldestInsertionEviction.cpp EvictionStrategy.h )
+add_executable (${PROJECT_NAME} Main.cpp )
 
 target_link_libraries (${PROJECT_NAME} ${Boost_LIBRARIES})
