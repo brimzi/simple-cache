@@ -1,6 +1,5 @@
 #include "Connection.h"
 #include <iostream>
-#include <boost/array.hpp>
 #include <boost/bind.hpp>
 #include <boost/asio/buffer.hpp>
 #include "ConnectionManager.h"
@@ -23,7 +22,7 @@ void Connection::start()
 {
 	data_.reset(new std::vector<boost::uint8_t>(3));
 	boost::asio::async_read(socket_, boost::asio::buffer(*data_.get()), boost::asio::transfer_at_least(3),
-		 boost::bind(&Connection::handle_readOpcode, shared_from_this(),
+		 boost::bind(&Connection::handleReadOpcode, shared_from_this(),
 			boost::asio::placeholders::error,
 			boost::asio::placeholders::bytes_transferred));
 
@@ -31,16 +30,16 @@ void Connection::start()
 
 void Connection::startReadKey(boost::uint16_t& keySize)
 {
-	cout << "startReadKey " << endl;
+	//cout << "startReadKey " << endl;
 	key_.resize(keySize);// .clear();//start fresh.TODO consider cost of this
 	boost::asio::async_read(socket_, boost::asio::buffer(key_), boost::asio::transfer_at_least(keySize),
-		boost::bind(&Connection::handle_readKey, shared_from_this(),
+		boost::bind(&Connection::handleReadKey, shared_from_this(),
 			boost::asio::placeholders::error, boost::asio::placeholders::bytes_transferred, keySize));
 }
 
 void Connection::startSetDataOperation()
 {
-	cout << "startSet " << endl;
+	//cout << "startSet " << endl;
 	data_.reset(new std::vector<boost::uint8_t>(4));
 	boost::asio::async_read(socket_, boost::asio::buffer(*data_.get()), boost::asio::transfer_at_least(4),
 		boost::bind(&Connection::handle_ReadRawDataHeader, shared_from_this(),
@@ -57,10 +56,6 @@ void Connection::startGetOperation()
 		uint8_t header[] = { Data, data_->size() ,data_->size() >> 8,data_->size() >> 16,data_->size() >> 24 };//TODO verify this
 
 		std::vector<boost::asio::mutable_buffer> bufs = {boost::asio::buffer(header),boost::asio::buffer(*data_.get())};
-
-		//res->insert(res->begin(), Data);//TODO consider the performance hit here,maybe I use a deque??
-
-		//res->insert(res->begin() + 1, length, length + 4);
 
 		sendResponseAndStart(bufs, data_->size()+4);
 	}
@@ -94,7 +89,7 @@ void Connection::stop()
 	std::cout << "Connection Closed: " <<address <<std::endl;
 }
 
-void Connection::handle_readOpcode(const boost::system::error_code& error, uint32_t bytes_transferred)
+void Connection::handleReadOpcode(const boost::system::error_code& error, uint32_t bytes_transferred)
 {
 	if (!error) 
 	{
@@ -115,7 +110,7 @@ void Connection::handle_readOpcode(const boost::system::error_code& error, uint3
 	}
 }
 
-void Connection::handle_readKey(const boost::system::error_code& error, boost::uint16_t byteTransferred, boost::uint16_t expectedkeySize)
+void Connection::handleReadKey(const boost::system::error_code& error, boost::uint16_t byteTransferred, boost::uint16_t expectedkeySize)
 {
 	if (!error)
 	{
@@ -168,7 +163,7 @@ void Connection::handleReadRawData(const boost::system::error_code& error, boost
 		}
 		else
 		{
-			storageProvider_.save(key_,data_);//TODO may wanna consider having a status,incase of error
+			storageProvider_.save(key_,data_);
 			sendStatusAndRestart(Ok, "OK");
 		}
 

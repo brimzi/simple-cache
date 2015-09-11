@@ -16,7 +16,7 @@ void StorageProvider::save(const std::vector<boost::uint8_t>& key, boost::shared
 	if (!enoughSpace(data->size())) {
 		createSpace(data->size());
 	}
-	//cache_[keyString] = data;
+
 	//we check if its already in cache
 	if (cache_.find(keyString)==cache_.end())
 	{

@@ -1,15 +1,34 @@
 #include <iostream>
 #include "Server.h"
 
+using namespace std;
 int main(int argc, char* argv[]) {
 
-
-
-	boost::asio::io_service io_service;
-	Server serv(io_service, 8085,1020*1024*8);
 	
-	io_service.run();
-	int k(0);
-	std::cin>>k;
+	try
+	{
+		if (argc < 3)
+		{
+			
+			cerr << "you entered " << argc << " arguments\n";
+			cerr << "Usage: SimpleCacheServer <port> <max-storage in bytes>\n";
+			cerr << "Press return to exit program " << endl;
+			cin.get();
+			return 1;
+		}
+		
+		int port = stoi(argv[1]);
+		int maxSize = stoi(argv[2]);;
+		cout << "starting server listening at port:" << port << " with maximum storage set to " << maxSize << " bytes" << endl;
+		boost::asio::io_service io_service;
+		Server serv(io_service, port, maxSize);
+		io_service.run();
+	
+	}
+	catch (std::exception& e)
+	{
+		std::cerr << "exception: " << e.what() << "\n";
+	}
+	
 	return 0;
 }

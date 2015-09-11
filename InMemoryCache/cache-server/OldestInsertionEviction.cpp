@@ -12,7 +12,7 @@ std::string OldestInsertionEviction::nextEviction()
 	DataItemContainer::nth_index<1>::type& rankIndex = dataItems_.get<1>();
 
 	auto first = rankIndex.begin();
-	std::string retVal = first->key;//TODO consider cost of string copy
+	std::string retVal = first->key;
 	dataItems_.erase(retVal);
 	return retVal;
 }
