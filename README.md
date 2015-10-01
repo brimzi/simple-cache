@@ -1,1 +1,1 @@
-A Simple implementation of a TCP in-memory cache implemented using C++ Boost ASIO.As is it this is really a simple skeleton and does not have any advanced features. 
+A Simple implementation of a TCP in-memory cache implemented using C++ Boost ASIO.As is it this is really a simple skeleton and does not have any advanced features.This is still in WIP and there are alot of things I intend to redo on the protocol itself and the storage mechanism 
