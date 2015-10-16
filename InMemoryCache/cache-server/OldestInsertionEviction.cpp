@@ -24,7 +24,7 @@ void OldestInsertionEviction::addKey(std::string key)
 
 void OldestInsertionEviction::refreshKey(std::string key) 
 {
-	int next=getNextRank();
+	uint64_t next=getNextRank();
 	auto keyItr = dataItems_.find(key);
 	dataItems_.modify(keyItr, [next](DataItem& d) {d.rank = next; });
 }

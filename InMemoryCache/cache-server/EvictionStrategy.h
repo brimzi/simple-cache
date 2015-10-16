@@ -14,8 +14,8 @@ class DataItem
 {
 public:
 	std::string key;
-	uint32_t rank;
-	DataItem(std::string k, uint32_t r) :key(k), rank(r) {}
+	uint64_t rank;
+	DataItem(std::string k, uint64_t r) :key(k), rank(r) {}
 	bool operator<(const DataItem& e)const { return rank < e.rank; }
 };
 
@@ -26,7 +26,7 @@ typedef multi_index_container
 	< 	
 		hashed_unique<member<DataItem,std::string, &DataItem::key>>,
 
-		ordered_unique<member<DataItem,uint32_t, &DataItem::rank>>
+		ordered_unique<member<DataItem,uint64_t, &DataItem::rank>>
 	>
 > DataItemContainer;
 
@@ -55,7 +55,7 @@ public:
 
 	 void deleteKey(std::string);
 private:
-	uint32_t getNextRank() { return currentRank++; }//NOTE not thread safe
-	uint32_t currentRank;
+	uint64_t getNextRank() { return currentRank++; }//NOTE not thread safe
+	uint64_t currentRank;
 	DataItemContainer dataItems_;
 };

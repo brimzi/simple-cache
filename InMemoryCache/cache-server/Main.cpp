@@ -4,13 +4,11 @@
 using namespace std;
 int main(int argc, char* argv[]) {
 
-	
 	try
 	{
 		if (argc < 3)
 		{
-			
-			cerr << "you entered " << argc << " arguments\n";
+			cerr << "you entered " << argc -1 << " arguments\n";
 			cerr << "Usage: SimpleCacheServer <port> <max-storage in bytes>\n";
 			cerr << "Press return to exit program " << endl;
 			cin.get();

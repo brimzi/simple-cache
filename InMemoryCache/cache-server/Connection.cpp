@@ -7,10 +7,10 @@
 
 using namespace std;
 
-Connection::Connection(boost::asio::io_service & io_service, ConnectionManager& manager,StorageProvider& storage, int maxData,int maxKey):socket_(io_service),
-										connectionManager_(manager),storageProvider_(storage),maxDataSize_(maxData), maxKeySize_(maxKey), opcode_(0)
+Connection::Connection(boost::asio::io_service & io_service, ConnectionManager& manager, StorageProvider& storage, int maxData, int maxKey) :socket_(io_service),
+connectionManager_(manager), storageProvider_(storage), maxDataSize_(maxData), maxKeySize_(maxKey), opcode_(0)
 {
-	
+
 }
 
 tcp::socket & Connection::socket()
@@ -21,29 +21,101 @@ tcp::socket & Connection::socket()
 void Connection::start()
 {
 	data_.reset(new std::vector<boost::uint8_t>(3));
+	auto self(shared_from_this());
 	boost::asio::async_read(socket_, boost::asio::buffer(*data_.get()), boost::asio::transfer_at_least(3),
-		 boost::bind(&Connection::handleReadOpcode, shared_from_this(),
+		[this, self](const boost::system::error_code& error, uint32_t bytes_transferred)
+	{
+		if (!error)
+		{
+			opcode_ = data_->at(0);
+			boost::uint16_t keySize = toInt16(*data_.get(), 1);
+			if (keySize <= maxKeySize_)
+			{
+				startReadKey(keySize);
+			}
+			else
+			{
+				sendStatusAndRestart(KeyTooBig, "supplied key is too big.Maximum allowed key size is: " + maxKeySize_);
+			}
+		}
+		else
+		{
+			connectionManager_.stop(self);
+		}
+	}
+
+	);
+
+	/*boost::asio::async_read(socket_, boost::asio::buffer(*data_.get()), boost::asio::transfer_at_least(3),
+		boost::bind(&Connection::handleReadOpcode, shared_from_this(),
 			boost::asio::placeholders::error,
-			boost::asio::placeholders::bytes_transferred));
+			boost::asio::placeholders::bytes_transferred));*/
 
 }
 
 void Connection::startReadKey(boost::uint16_t& keySize)
 {
-	//cout << "startReadKey " << endl;
 	key_.resize(keySize);// .clear();//start fresh.TODO consider cost of this
+	auto self = shared_from_this();
 	boost::asio::async_read(socket_, boost::asio::buffer(key_), boost::asio::transfer_at_least(keySize),
+		[this, self, keySize](const boost::system::error_code& error, boost::uint16_t byteTransferred)
+	{
+		if (!error)
+		{
+			if (byteTransferred != keySize)
+			{
+				sendStatusAndRestart(OtherErrors, "Data sent is not equal to the expected size");
+			}
+			else
+			{
+				startClientRequestedOp();
+			}
+		}
+		else
+		{
+			connectionManager_.stop(self);
+		}
+	}
+	
+	);
+
+	/*boost::asio::async_read(socket_, boost::asio::buffer(key_), boost::asio::transfer_at_least(keySize),
 		boost::bind(&Connection::handleReadKey, shared_from_this(),
-			boost::asio::placeholders::error, boost::asio::placeholders::bytes_transferred, keySize));
+			boost::asio::placeholders::error, boost::asio::placeholders::bytes_transferred, keySize));*/
 }
 
 void Connection::startSetDataOperation()
 {
-	//cout << "startSet " << endl;
 	data_.reset(new std::vector<boost::uint8_t>(4));
+	auto self = shared_from_this();
 	boost::asio::async_read(socket_, boost::asio::buffer(*data_.get()), boost::asio::transfer_at_least(4),
-		boost::bind(&Connection::handle_ReadRawDataHeader, shared_from_this(),
-			boost::asio::placeholders::error, boost::asio::placeholders::bytes_transferred));
+		[this, self](const boost::system::error_code & error, uint32_t bytes_transferred)
+	{
+		if (!error)
+		{
+			uint32_t size = toInt32(*data_.get(), 0);
+			if (size <= maxDataSize_)
+			{
+				data_.reset(new std::vector<boost::uint8_t>(size));
+				boost::asio::async_read(socket_, boost::asio::buffer(*data_.get()), boost::asio::transfer_at_least(size),
+					boost::bind(&Connection::handleReadRawData, self,
+						boost::asio::placeholders::error, boost::asio::placeholders::bytes_transferred, size));
+			}
+			else
+			{
+				sendStatusAndRestart(DataTooBig, "The data sent is too big.Maximum data allowed is: " + maxDataSize_);
+			}
+
+		}
+		else
+		{
+			connectionManager_.stop(self);
+		}
+	});
+
+	/*boost::asio::async_read(socket_, boost::asio::buffer(*data_.get()), boost::asio::transfer_at_least(4),
+		boost::bind(&Connection::handleReadRawDataHeader, shared_from_this(),
+			boost::asio::placeholders::error, boost::asio::placeholders::bytes_transferred));*/
 
 }
 
@@ -52,12 +124,12 @@ void Connection::startGetOperation()
 	data_ = storageProvider_.get(key_);
 	if (data_)
 	{
-		
+
 		uint8_t header[] = { Data, data_->size() ,data_->size() >> 8,data_->size() >> 16,data_->size() >> 24 };//TODO verify this
 
-		std::vector<boost::asio::mutable_buffer> bufs = {boost::asio::buffer(header),boost::asio::buffer(*data_.get())};
+		std::vector<boost::asio::mutable_buffer> bufs = { boost::asio::buffer(header),boost::asio::buffer(*data_.get()) };
 
-		sendResponseAndStart(bufs, data_->size()+4);
+		sendResponseAndStart(bufs, data_->size() + 4);
 	}
 	else
 	{
@@ -77,24 +149,24 @@ void Connection::startDeleteOperation()
 	{
 		sendStatusAndRestart(OtherErrors, "Supplied key not found in cache");
 	}
-	
+
 }
 
 
 
 void Connection::stop()
 {
-	std::string address = socket_.remote_endpoint().address().to_string()+":"+std::to_string(socket_.remote_endpoint().port());
+	std::string address = socket_.remote_endpoint().address().to_string() + ":" + std::to_string(socket_.remote_endpoint().port());
 	socket_.close();
-	std::cout << "Connection Closed: " <<address <<std::endl;
+	std::cout << "Connection Closed: " << address << std::endl;
 }
 
 void Connection::handleReadOpcode(const boost::system::error_code& error, uint32_t bytes_transferred)
 {
-	if (!error) 
+	if (!error)
 	{
 		opcode_ = data_->at(0);
-		boost::uint16_t keySize = toInt16(*data_.get(),1);
+		boost::uint16_t keySize = toInt16(*data_.get(), 1);
 		if (keySize <= maxKeySize_)
 		{
 			startReadKey(keySize);
@@ -118,7 +190,7 @@ void Connection::handleReadKey(const boost::system::error_code& error, boost::ui
 		{
 			sendStatusAndRestart(OtherErrors, "Data sent is not equal to the expected size");
 		}
-		else 
+		else
 		{
 			startClientRequestedOp();
 		}
@@ -129,12 +201,12 @@ void Connection::handleReadKey(const boost::system::error_code& error, boost::ui
 	}
 }
 
-void Connection::handle_ReadRawDataHeader(const boost::system::error_code & error, uint32_t bytes_transferred)
+void Connection::handleReadRawDataHeader(const boost::system::error_code & error, uint32_t bytes_transferred)
 {
 	if (!error)
 	{
-		uint32_t size = toInt32(*data_.get(),0);
-		if(size <= maxDataSize_)
+		uint32_t size = toInt32(*data_.get(), 0);
+		if (size <= maxDataSize_)
 		{
 			data_.reset(new std::vector<boost::uint8_t>(size));
 			boost::asio::async_read(socket_, boost::asio::buffer(*data_.get()), boost::asio::transfer_at_least(size),
@@ -143,9 +215,9 @@ void Connection::handle_ReadRawDataHeader(const boost::system::error_code & erro
 		}
 		else
 		{
-			sendStatusAndRestart(DataTooBig, "The data sent is too big.Maximum data allowed is: "+maxDataSize_);
+			sendStatusAndRestart(DataTooBig, "The data sent is too big.Maximum data allowed is: " + maxDataSize_);
 		}
-		
+
 	}
 	else
 	{
@@ -163,7 +235,7 @@ void Connection::handleReadRawData(const boost::system::error_code& error, boost
 		}
 		else
 		{
-			storageProvider_.save(key_,data_);
+			storageProvider_.save(key_, data_);
 			sendStatusAndRestart(Ok, "OK");
 		}
 
@@ -186,9 +258,9 @@ void Connection::handleWriteReqResponse(const boost::system::error_code & error)
 	}
 }
 
-void Connection::startClientRequestedOp() 
+void Connection::startClientRequestedOp()
 {
-	switch (opcode_) 
+	switch (opcode_)
 	{
 	case 0:
 		startSetDataOperation();
@@ -203,14 +275,14 @@ void Connection::startClientRequestedOp()
 	case 4:
 		sendStatusAndRestart(OtherErrors, "Opcode you sent is not valid in this case");
 		break;
-	default: 
+	default:
 	{
 		sendStatusAndRestart(OtherErrors, "Opcode you sent does not exist");
 	}
 	}
 }
 
-void Connection::sendStatusAndRestart(ErrorCodes code,std::string message) {
+void Connection::sendStatusAndRestart(ErrorCodes code, std::string message) {
 	data_.reset(new std::vector<uint8_t>);
 	data_.get()->push_back(Status);
 	data_.get()->push_back(code);
@@ -225,21 +297,21 @@ void Connection::sendStatusAndRestart(ErrorCodes code,std::string message) {
 	sendResponseAndStart(bufs, data_->size());
 }
 
-void Connection::sendResponseAndStart(std::vector<boost::asio::mutable_buffer>& resp,uint32_t size)
+void Connection::sendResponseAndStart(std::vector<boost::asio::mutable_buffer>& resp, uint32_t size)
 {
 	boost::asio::async_write(socket_, resp, boost::asio::transfer_at_least(size), boost::bind(&Connection::handleWriteReqResponse,
-		shared_from_this(),boost::asio::placeholders::error));
+		shared_from_this(), boost::asio::placeholders::error));
 }
 
 
 uint32_t Connection::toInt32(const std::vector<uint8_t>& intBytes, uint32_t start)
 {
-	return (intBytes[start+3] << 24) | (intBytes[start+2] << 16) | (intBytes[start+1] << 8) | intBytes[start];
+	return (intBytes[start + 3] << 24) | (intBytes[start + 2] << 16) | (intBytes[start + 1] << 8) | intBytes[start];
 }
 
-uint16_t Connection::toInt16(const std::vector<uint8_t>& intBytes,uint32_t start)
+uint16_t Connection::toInt16(const std::vector<uint8_t>& intBytes, uint32_t start)
 {
-	return  (intBytes[start+1] << 8) | intBytes[start];
+	return  (intBytes[start + 1] << 8) | intBytes[start];
 }
 
 

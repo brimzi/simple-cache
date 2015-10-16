@@ -36,7 +36,7 @@ private:
 
 	void handleReadKey(const boost::system::error_code& error, boost::uint16_t byteTransferred, boost::uint16_t expectedkeySize);
 
-	void handle_ReadRawDataHeader(const boost::system::error_code& error, unsigned int bytes_transferred);
+	void handleReadRawDataHeader(const boost::system::error_code& error, unsigned int bytes_transferred);
 
 	void handleReadRawData(const boost::system::error_code& error, boost::uint32_t bytes_transferred, boost::uint32_t expected);
 
