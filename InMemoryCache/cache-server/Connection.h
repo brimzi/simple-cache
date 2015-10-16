@@ -32,12 +32,12 @@ public:
 
 
 private:
-	void handleReadOpcode(const boost::system::error_code& error,unsigned int bytes_transferred);
+	/*void handleReadOpcode(const boost::system::error_code& error,unsigned int bytes_transferred);
 
 	void handleReadKey(const boost::system::error_code& error, boost::uint16_t byteTransferred, boost::uint16_t expectedkeySize);
 
 	void handleReadRawDataHeader(const boost::system::error_code& error, unsigned int bytes_transferred);
-
+*/
 	void handleReadRawData(const boost::system::error_code& error, boost::uint32_t bytes_transferred, boost::uint32_t expected);
 
 	void handleWriteReqResponse(const boost::system::error_code& error);

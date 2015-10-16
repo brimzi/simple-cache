@@ -160,70 +160,70 @@ void Connection::stop()
 	socket_.close();
 	std::cout << "Connection Closed: " << address << std::endl;
 }
-
-void Connection::handleReadOpcode(const boost::system::error_code& error, uint32_t bytes_transferred)
-{
-	if (!error)
-	{
-		opcode_ = data_->at(0);
-		boost::uint16_t keySize = toInt16(*data_.get(), 1);
-		if (keySize <= maxKeySize_)
-		{
-			startReadKey(keySize);
-		}
-		else
-		{
-			sendStatusAndRestart(KeyTooBig, "supplied key is too big.Maximum allowed key size is: " + maxKeySize_);
-		}
-	}
-	else
-	{
-		connectionManager_.stop(shared_from_this());
-	}
-}
-
-void Connection::handleReadKey(const boost::system::error_code& error, boost::uint16_t byteTransferred, boost::uint16_t expectedkeySize)
-{
-	if (!error)
-	{
-		if (byteTransferred != expectedkeySize)
-		{
-			sendStatusAndRestart(OtherErrors, "Data sent is not equal to the expected size");
-		}
-		else
-		{
-			startClientRequestedOp();
-		}
-	}
-	else
-	{
-		connectionManager_.stop(shared_from_this());
-	}
-}
-
-void Connection::handleReadRawDataHeader(const boost::system::error_code & error, uint32_t bytes_transferred)
-{
-	if (!error)
-	{
-		uint32_t size = toInt32(*data_.get(), 0);
-		if (size <= maxDataSize_)
-		{
-			data_.reset(new std::vector<boost::uint8_t>(size));
-			boost::asio::async_read(socket_, boost::asio::buffer(*data_.get()), boost::asio::transfer_at_least(size),
-				boost::bind(&Connection::handleReadRawData, shared_from_this(),
-					boost::asio::placeholders::error, boost::asio::placeholders::bytes_transferred, size));
-		}
-		else
-		{
-			sendStatusAndRestart(DataTooBig, "The data sent is too big.Maximum data allowed is: " + maxDataSize_);
-		}
-
-	}
-	else
-	{
-		connectionManager_.stop(shared_from_this());
-	}
-}
+//
+//void Connection::handleReadOpcode(const boost::system::error_code& error, uint32_t bytes_transferred)
+//{
+//	if (!error)
+//	{
+//		opcode_ = data_->at(0);
+//		boost::uint16_t keySize = toInt16(*data_.get(), 1);
+//		if (keySize <= maxKeySize_)
+//		{
+//			startReadKey(keySize);
+//		}
+//		else
+//		{
+//			sendStatusAndRestart(KeyTooBig, "supplied key is too big.Maximum allowed key size is: " + maxKeySize_);
+//		}
+//	}
+//	else
+//	{
+//		connectionManager_.stop(shared_from_this());
+//	}
+//}
+//
+//void Connection::handleReadKey(const boost::system::error_code& error, boost::uint16_t byteTransferred, boost::uint16_t expectedkeySize)
+//{
+//	if (!error)
+//	{
+//		if (byteTransferred != expectedkeySize)
+//		{
+//			sendStatusAndRestart(OtherErrors, "Data sent is not equal to the expected size");
+//		}
+//		else
+//		{
+//			startClientRequestedOp();
+//		}
+//	}
+//	else
+//	{
+//		connectionManager_.stop(shared_from_this());
+//	}
+//}
+//
+//void connection::handlereadrawdataheader(const boost::system::error_code & error, uint32_t bytes_transferred)
+//{
+//	if (!error)
+//	{
+//		uint32_t size = toint32(*data_.get(), 0);
+//		if (size <= maxdatasize_)
+//		{
+//			data_.reset(new std::vector<boost::uint8_t>(size));
+//			boost::asio::async_read(socket_, boost::asio::buffer(*data_.get()), boost::asio::transfer_at_least(size),
+//				boost::bind(&connection::handlereadrawdata, shared_from_this(),
+//					boost::asio::placeholders::error, boost::asio::placeholders::bytes_transferred, size));
+//		}
+//		else
+//		{
+//			sendstatusandrestart(datatoobig, "the data sent is too big.maximum data allowed is: " + maxdatasize_);
+//		}
+//
+//	}
+//	else
+//	{
+//		connectionmanager_.stop(shared_from_this());
+//	}
+//}
 
 void Connection::handleReadRawData(const boost::system::error_code& error, boost::uint32_t bytes_transferred, boost::uint32_t expected)
 {
@@ -289,6 +289,9 @@ void Connection::sendStatusAndRestart(ErrorCodes code, std::string message) {
 	data_.get()->push_back(0);
 	data_.get()->push_back(0);
 	data_.get()->push_back(0);
+
+	//push message length
+	data_->push_back(message.length());
 	for (auto letter : message)
 	{
 		data_.get()->push_back(letter);
