@@ -3,7 +3,16 @@ set (PROJECT_NAME "SimpleCacheServer" CXX)
 project(${PROJECT_NAME})
 
 set (CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/output)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+if (UNIX)
+   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+endif (UNIX)
+
+if (MSVC)
+   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D _WIN32_WINNT=0x0501")
+endif (MSVC)
+
+
+
 
 #set (BOOST_ROOT "c:/boost/boost_1_59_0")
 

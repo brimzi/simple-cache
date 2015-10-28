@@ -4,7 +4,7 @@
 #include <boost/shared_ptr.hpp>
 #include "EvictionStrategy.h"
 
-//using namespace boost::container;
+
 class StorageProvider
 {
 public:

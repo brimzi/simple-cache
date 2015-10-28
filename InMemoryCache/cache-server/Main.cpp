@@ -16,7 +16,8 @@ int main(int argc, char* argv[]) {
 		}
 		
 		int port = stoi(argv[1]);
-		int maxSize = stoi(argv[2]);;
+		int maxSize = stoi(argv[2]);
+		//TODO check that maxsize > size of file
 		cout << "starting server listening at port:" << port << " with maximum storage set to " << maxSize << " bytes" << endl;
 		boost::asio::io_service io_service;
 		Server serv(io_service, port, maxSize);

@@ -6,9 +6,6 @@
 #include <boost/multi_index/identity.hpp>
 #include <boost/multi_index/ordered_index.hpp>
 
-using namespace boost;
-using namespace boost::multi_index;
-
 
 class DataItem
 {
@@ -19,14 +16,14 @@ public:
 	bool operator<(const DataItem& e)const { return rank < e.rank; }
 };
 
-typedef multi_index_container
+typedef boost::multi_index::multi_index_container
 <
 	DataItem,
-	indexed_by
+	boost::multi_index::indexed_by
 	< 	
-		hashed_unique<member<DataItem,std::string, &DataItem::key>>,
+	boost::multi_index::hashed_unique<boost::multi_index::member<DataItem,std::string, &DataItem::key>>,
 
-		ordered_unique<member<DataItem,uint64_t, &DataItem::rank>>
+	boost::multi_index::ordered_unique<boost::multi_index::member<DataItem,uint64_t, &DataItem::rank>>
 	>
 > DataItemContainer;
 
@@ -34,6 +31,9 @@ typedef multi_index_container
 class  EvictionStrategy
 {
 public:
+
+	virtual ~EvictionStrategy() {}
+	
 	virtual std::string nextEviction()=0;
 	
 	virtual void addKey(std::string)=0;
@@ -47,6 +47,7 @@ class OldestInsertionEviction :public EvictionStrategy
 {
 public:
 	 OldestInsertionEviction();
+
 	 std::string nextEviction() ;
 
 	 void addKey(std::string) ;

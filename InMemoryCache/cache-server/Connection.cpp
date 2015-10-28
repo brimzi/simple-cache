@@ -58,7 +58,7 @@ void Connection::startReadKey(boost::uint16_t& keySize)
 	key_.resize(keySize);// .clear();//start fresh.TODO consider cost of this
 	auto self = shared_from_this();
 	boost::asio::async_read(socket_, boost::asio::buffer(key_), boost::asio::transfer_at_least(keySize),
-		[this, self, keySize](const boost::system::error_code& error, boost::uint16_t byteTransferred)
+		[this, self, keySize](const boost::system::error_code& error, size_t byteTransferred)
 	{
 		if (!error)
 		{
@@ -125,7 +125,7 @@ void Connection::startGetOperation()
 	if (data_)
 	{
 
-		uint8_t header[] = { Data, data_->size() ,data_->size() >> 8,data_->size() >> 16,data_->size() >> 24 };//TODO verify this
+		uint8_t header[] = { (uint8_t)Data,(uint8_t) data_->size() ,(uint8_t)(data_->size() >> 8),(uint8_t)(data_->size() >> 16),(uint8_t)(data_->size() >> 24) };//TODO verify this
 
 		std::vector<boost::asio::mutable_buffer> bufs = { boost::asio::buffer(header),boost::asio::buffer(*data_.get()) };
 
@@ -133,8 +133,8 @@ void Connection::startGetOperation()
 	}
 	else
 	{
-		boost::shared_ptr<std::vector<uint8_t>> r;
-		data_ = r;
+		/*boost::shared_ptr<std::vector<uint8_t>> r;
+		data_ = r;*/
 		sendStatusAndRestart(NoSuchKey, "Requested data not in cache");
 	}
 }
@@ -291,7 +291,7 @@ void Connection::sendStatusAndRestart(ErrorCodes code, std::string message) {
 	data_.get()->push_back(0);
 
 	//push message length
-	data_->push_back(message.length());
+	data_->push_back((unsigned char)message.length());
 	for (auto letter : message)
 	{
 		data_.get()->push_back(letter);

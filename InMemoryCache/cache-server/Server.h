@@ -2,7 +2,7 @@
 #include <boost/asio.hpp>
 #include "Connection.h"
 #include "ConnectionManager.h"
-
+//TODO Remove namespace in header
 using namespace boost::asio::ip;
 class Server {
 

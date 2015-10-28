@@ -6,6 +6,7 @@
 #include <vector>
 #include "StorageProvider.h"
 
+//TODO Remove namespace in header
 using namespace boost::asio::ip;
 class ConnectionManager;
 
@@ -73,8 +74,8 @@ private:
 
 	uint8_t opcode_;
 	std::vector<uint8_t> key_;
-	int maxDataSize_;
-	int maxKeySize_;
+	uint32_t maxDataSize_;
+	uint32_t maxKeySize_;
 	ConnectionManager& connectionManager_;
 	StorageProvider& storageProvider_;
 	boost::shared_ptr<std::vector<uint8_t>> data_;
