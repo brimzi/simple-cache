@@ -15,8 +15,6 @@ public:
 
 	boost::shared_ptr<std::vector<boost::uint8_t>> get(const std::vector<boost::uint8_t>& key);
 
-	
-
 	int remove(const std::vector<boost::uint8_t>& key);
 
 private:
@@ -24,7 +22,7 @@ private:
 
 	void createSpace(boost::uint32_t size);
 	
-	bool removeData(std::string& key);
+	bool removeData(const std::string& key);
 
 	std::unordered_map<std::string, boost::shared_ptr<std::vector<uint8_t>>> cache_;
 	uint32_t currentSize_;

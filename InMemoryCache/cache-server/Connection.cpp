@@ -103,6 +103,7 @@ void Connection::startSetDataOperation()
 			}
 			else
 			{
+				
 				sendStatusAndRestart(DataTooBig, "The data sent is too big.Maximum data allowed is: " + maxDataSize_);
 			}
 
